@@ -1,5 +1,8 @@
 # Go Sensei · 13×13 围棋教学
 
+[![CI](https://github.com/xylitolcode/Go-Sensei/actions/workflows/ci.yml/badge.svg)](https://github.com/xylitolcode/Go-Sensei/actions/workflows/ci.yml)
+[![PR review: CodeRabbit](https://img.shields.io/badge/PR%20review-CodeRabbit-FF570A)](https://coderabbit.ai)
+
 一个带 AI 导师的 13 路围棋教学应用。你执黑，AI 执白，每落一子都会得到即时讲解，
 并在棋盘上标出气数、提子、叫吃目标与危险棋块。导师会跨手追踪你的行为模式
 （连续征子、忽略危险、攻守失衡……），并把你的水平画像存在本地，越下越懂你。
@@ -321,6 +324,21 @@ npm run build      # 生产构建
 npm run preview    # 预览生产构建（同样可用 --port 4000）
 npm test           # 运行测试
 ```
+
+## 协作流程
+
+`main` 是受保护分支，改动一律走 PR，不直接推。
+
+1. 从 `main` 切分支：`git checkout -b feat/xxx`
+2. 提交并推送：`git push -u origin feat/xxx`
+3. 开 PR：`gh pr create`（交互式，会自动带出 PR 模板；
+   不要加 `--fill`，那会用 commit 信息当正文并把模板顶掉）
+4. CI 会自动跑测试和构建；CodeRabbit 会在 PR 里做一轮自动审查
+5. 本地改完继续 `git push`，CI 和 CodeRabbit 都会增量再审一次
+6. 全绿后 squash 合并
+
+自动审查的规则写在 `.coderabbit.yaml`：默认中文、`chill` 强度、跳过锁文件和构建产物，
+并对规则引擎、Nitro 接口、KataGo 子进程、Vue 组件分别给了针对性要求。
 
 ## 隐私
 
