@@ -1,0 +1,34 @@
+{
+  // Cloudflare Workers 部署配置。wrangler deploy 会读这个文件，
+  // 所以构建产物和部署目标不再靠控制台里的勾选项决定。
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // 必须和线上 Worker 名字一致，否则会部署出一个新的 Worker
+  "name": "go-sensei",
+
+  // Nitro 的 Cloudflare 预设产物入口
+  "main": ".output/server/index.mjs",
+
+  // 如需与线上已有版本完全对齐，把这里改成 Dashboard 里该 Worker 的
+  // compatibility date。改日期会改变运行时语义，不要随手往前调。
+  "compatibility_date": "2026-11-01",
+
+  // Workers 没有完整的 Node 运行时，Nitro 产物依赖这面兼容层。
+  // 少了它，process.env / AsyncLocalStorage 这类东西会在运行时出问题。
+  "compatibility_flags": ["nodejs_compat"],
+
+  // 静态资源走 Workers Assets，和 Nitro 生成的 .output/public 对齐
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".output/public"
+  },
+
+  // 线上看日志和指标用，出问题不用靠猜
+  "observability": {
+    "enabled": true
+  }
+
+  // 免费版 CPU 上限 10ms，这一行在免费版上无效甚至会导致部署报错，
+  // 升级到 Workers Paid 后再打开：
+  // "limits": { "cpu_ms": 30000 }
+}
