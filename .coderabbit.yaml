@@ -1,0 +1,93 @@
+# CodeRabbit 配置 · https://docs.coderabbit.ai/reference/configuration
+# 放在仓库根目录，PR 上的自动审查会读这份配置。
+language: zh-CN
+early_access: false
+
+tone_instructions: |
+  用中文评论，语气直接、克制，不要寒暄和客套。
+  只指出真实存在的问题，不要为了凑数量而提建议。
+  涉及围棋规则（气、提子、劫、数子）的判断请先确认逻辑再下结论。
+
+reviews:
+  # chill = 只报高置信度问题；想更严格可改成 assertive
+  profile: chill
+
+  # 不因为提了意见就阻塞合并，避免一个人开发时被自己卡死
+  request_changes_workflow: false
+
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+
+  auto_review:
+    enabled: true
+    # 草稿 PR 先不审，免得边写边被叨叨
+    drafts: false
+    base_branches:
+      - main
+    # 新提交只做增量审查
+    auto_incremental_review: true
+
+  path_filters:
+    # 锁文件、构建产物、本地数据没必要逐行看
+    - "!package-lock.json"
+    - "!.output/**"
+    - "!.nuxt/**"
+    - "!.data/**"
+    - "!analysis_logs/**"
+    - "!public/**"
+
+  path_instructions:
+    - path: "app/utils/**"
+      instructions: |
+        这里是纯 TypeScript 领域逻辑（规则引擎、评估、画像、行为追踪），要求：
+        1. 不允许出现 Vue / Nuxt 的响应式或运行时 API，保持可在 Node 下直接单测。
+        2. 改动规则相关逻辑（goRules / scoring / ko）必须在 tests/ 下有对应用例。
+        3. 棋盘是 13 路，坐标与边界判断不要写成 19 路的假设。
+
+    - path: "server/api/**"
+      instructions: |
+        Nitro 路由处理器。要求：
+        1. 一律通过 useRuntimeConfig() 读取密钥，禁止硬编码 API Key。
+        2. 外部调用（模型、KataGo）必须有自己的超时，不允许无限等待。
+        3. 失败时返回结构化错误，不要把上游原始报错整段透给前端。
+
+    - path: "server/utils/**"
+      instructions: |
+        这里包含 KataGo 子进程管理。重点关注：
+        1. 子进程是否在所有失败路径上都被正确回收，避免僵尸进程。
+        2. 超时与并发时是否有竞态。
+        3. 临时文件（analysis.cfg 等）是否会被清理。
+
+    - path: "app/components/**"
+      instructions: |
+        Vue 3 单文件组件，使用 <script setup lang="ts">。要求：
+        1. props / emits 要有类型。
+        2. 不要在渲染函数或 template 里做重计算，棋盘气数计算属于 store 或 utils。
+        3. 注意 13×13 棋盘的坐标换算不要写错行列表。
+
+    - path: "app/stores/**"
+      instructions: |
+        Pinia store。关注状态变更是否原地改了对象导致响应式丢失，
+        以及「落子 → 提子 → 判劫 → 计分」这条链的顺序是否被破坏。
+
+    - path: ".github/workflows/**"
+      instructions: |
+        GitHub Actions 工作流。要求 action 使用主版本号固定（如 @v7），
+        不要用 @master；新增步骤要考虑失败时是否需要上传产物便于排查。
+
+  tools:
+    # 仓库目前没有 ESLint 配置，开着会用默认规则刷一堆噪音，先关掉
+    eslint:
+      enabled: false
+    # 密钥泄露扫描：这个项目有 .env 和模型 Key，值得开
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+
+chat:
+  auto_reply: true

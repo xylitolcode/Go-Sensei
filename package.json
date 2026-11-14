@@ -1,5 +1,5 @@
 {
-  "name": "board-game",
+  "name": "go-sensei",
   "type": "module",
   "private": true,
   "scripts": {
