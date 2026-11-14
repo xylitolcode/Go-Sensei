@@ -7,7 +7,7 @@ import {
   type KatagoPlayResponse,
   type KatagoQueryMove
 } from '../../app/utils/katago'
-import { getKatagoEngine } from '../utils/katagoEngine'
+import { edgeRuntimeBlock, getKatagoEngine } from '../utils/katagoEngine'
 import { readKatagoConfig } from '../utils/katagoConfig'
 
 interface PlayBody {
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event): Promise<KatagoPlayResponse> => 
 
   const config = readKatagoConfig(useRuntimeConfig(event))
   const engine = getKatagoEngine(config)
-  if (!engine) return { source: 'unavailable', reason: 'not-configured' }
+  if (!engine) return { source: 'unavailable', reason: edgeRuntimeBlock() ?? 'not-configured' }
 
   const rank = normalizeOpponentRank(body.rank)
   const profile = rankProfile(rank)

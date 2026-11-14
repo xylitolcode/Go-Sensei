@@ -4,7 +4,7 @@ import {
   type KatagoAnalyzeResponse,
   type KatagoQueryMove
 } from '../../app/utils/katago'
-import { getKatagoEngine } from '../utils/katagoEngine'
+import { edgeRuntimeBlock, getKatagoEngine } from '../utils/katagoEngine'
 import { readKatagoConfig } from '../utils/katagoConfig'
 
 interface AnalyzeBody {
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event): Promise<KatagoAnalyzeResponse> 
 
   const config = readKatagoConfig(useRuntimeConfig(event))
   const engine = getKatagoEngine(config)
-  if (!engine) return { source: 'unavailable', reason: 'not-configured' }
+  if (!engine) return { source: 'unavailable', reason: edgeRuntimeBlock() ?? 'not-configured' }
 
   const moves: KatagoQueryMove[] = body.moves
     .filter((move) => move && (move.color === 'black' || move.color === 'white'))
