@@ -325,6 +325,42 @@ npm run preview    # 预览生产构建（同样可用 --port 4000）
 npm test           # 运行测试
 ```
 
+## 部署到 Cloudflare Workers
+
+线上地址：<https://go-sensei.1294482766.workers.dev/>
+
+部署目标由仓库里的 `wrangler.jsonc` 决定（`main` / `assets` / `nodejs_compat`），
+不再依赖控制台里的勾选项。
+
+```bash
+# bash / Git Bash
+NITRO_PRESET=cloudflare_module npm run build && npx wrangler deploy
+
+# PowerShell
+$env:NITRO_PRESET="cloudflare_module"; npm run build; npx wrangler deploy
+```
+
+模型密钥不要写进仓库，用 Worker 密钥：
+
+```bash
+npx wrangler secret put NUXT_LLM_API_KEY
+npx wrangler secret put NUXT_LLM_BASE_URL   # 可选，默认走 deepseek
+```
+
+如果改用 Cloudflare 的 Git 构建（Workers Builds），记得在构建设置里加
+`NITRO_PRESET=cloudflare_module`，否则会产出 Node 服务端，Workers 起不来。
+
+### Workers 上会踩的三个坑
+
+| 现象 | 原因 | 处理 |
+|------|------|------|
+| Error 1102 `Worker exceeded resource limits` | 免费版 CPU 上限 **10 ms**，而官方文档说 SSR 典型消耗 **10-20 ms** | 升级 Workers Paid（CPU 默认 30 s），或在 `wrangler.jsonc` 打开 `limits.cpu_ms` |
+| KataGo 一直显示不可用 | Workers 没有子进程和文件系统，`spawn` / `existsSync` 在构建时被替换成 stub | 正常降级；`/api/katago-status` 会返回 `unsupported-runtime` 说明原因 |
+| AI 点评全是模板 | `.env` 不会被上传，`NUXT_LLM_API_KEY` 缺失时静默 fallback | 用 `wrangler secret put` 补齐 |
+
+KataGo 是原生二进制 + 神经网络权重，**只能在本地 Node 环境跑**。
+线上想要真引擎分析，得换成远程推理服务，或者把引擎单独部署成一台常驻机器。
+
 ## 协作流程
 
 `main` 是受保护分支，改动一律走 PR，不直接推。
@@ -333,7 +369,7 @@ npm test           # 运行测试
 2. 提交并推送：`git push -u origin feat/xxx`
 3. 开 PR：`gh pr create`（交互式，会自动带出 PR 模板；
    不要加 `--fill`，那会用 commit 信息当正文并把模板顶掉）
-4. CI 会自动跑测试和构建；CodeRabbit 会在 PR 里做一轮自动审查
+4. CI 会跑测试、Node 构建和 Workers 构建；CodeRabbit 会在 PR 里做一轮自动审查
 5. 本地改完继续 `git push`，CI 和 CodeRabbit 都会增量再审一次
 6. 全绿后 squash 合并
 

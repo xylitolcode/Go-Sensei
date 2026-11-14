@@ -288,9 +288,30 @@ export class KatagoEngine {
   }
 }
 
+/**
+ * Returns null on a normal Node runtime, or a human-readable reason on an edge
+ * runtime (Cloudflare Workers and friends).
+ *
+ * Why this exists: workerd has neither child processes nor a real filesystem.
+ * `node:child_process` and `node:fs` get replaced with stubs at build time, and
+ * the stub for `existsSync` always returns FALSE — which made `missingFiles()`
+ * report "binary, config, model" even when all three paths were configured.
+ * That is a lie the status endpoint would happily show to the student, so we
+ * detect the runtime and say what is actually going on.
+ */
+export function edgeRuntimeBlock(): string | null {
+  const ua = (globalThis as { navigator?: { userAgent?: unknown } }).navigator?.userAgent
+  if (typeof ua === 'string' && ua.includes('Cloudflare-Workers')) {
+    return 'unsupported-runtime: 边缘运行时没有子进程和文件系统，KataGo 只能在本地 Node 环境运行'
+  }
+  return null
+}
+
 /** Returns null when KataGo is not configured at all (the default). */
 export function getKatagoEngine(config: KatagoConfig): KatagoEngine | null {
   if (!config.binary || !config.config || !config.model) return null
+  // Never build an engine we cannot possibly start on this runtime.
+  if (edgeRuntimeBlock()) return null
   const holder = globalThis as unknown as GlobalWithEngine
   const existing = holder[GLOBAL_KEY]
   const key = `${config.binary}|${config.config}|${config.model}|${config.humanModel}`

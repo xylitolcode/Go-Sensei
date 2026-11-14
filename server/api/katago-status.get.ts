@@ -1,5 +1,5 @@
 import type { KatagoStatus } from '../../app/utils/katago'
-import { getKatagoEngine } from '../utils/katagoEngine'
+import { edgeRuntimeBlock, getKatagoEngine } from '../utils/katagoEngine'
 import { readKatagoConfig, type KatagoConfig } from '../utils/katagoConfig'
 
 /**
@@ -8,6 +8,16 @@ import { readKatagoConfig, type KatagoConfig } from '../utils/katagoConfig'
  */
 export default defineEventHandler(async (event): Promise<KatagoStatus> => {
   const config: KatagoConfig = readKatagoConfig(useRuntimeConfig(event))
+  const isConfigured = Boolean(config.binary && config.config && config.model)
+
+  // Edge runtimes (Cloudflare Workers) cannot start a subprocess at all. Report
+  // that reason instead of the misleading "missing-files" that the stubbed
+  // `existsSync` would produce.
+  const blocked = edgeRuntimeBlock()
+  if (blocked) {
+    return { configured: isConfigured, available: false, reason: blocked }
+  }
+
   const engine = getKatagoEngine(config)
   if (!engine) {
     return { configured: false, available: false, reason: 'not-configured' }
