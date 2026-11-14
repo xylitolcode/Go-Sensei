@@ -336,8 +336,8 @@ npm test           # 运行测试
 # bash / Git Bash
 NITRO_PRESET=cloudflare_module npm run build && npx wrangler deploy
 
-# PowerShell
-$env:NITRO_PRESET="cloudflare_module"; npm run build; npx wrangler deploy
+# PowerShell（注意：构建失败就不该继续部署，所以用 $? 判断）
+$env:NITRO_PRESET="cloudflare_module"; npm run build; if ($?) { npx wrangler deploy }
 ```
 
 模型密钥不要写进仓库，用 Worker 密钥：
@@ -354,7 +354,7 @@ npx wrangler secret put NUXT_LLM_BASE_URL   # 可选，默认走 deepseek
 
 | 现象 | 原因 | 处理 |
 |------|------|------|
-| Error 1102 `Worker exceeded resource limits` | 免费版 CPU 上限 **10 ms**，而官方文档说 SSR 典型消耗 **10-20 ms** | 升级 Workers Paid（CPU 默认 30 s），或在 `wrangler.jsonc` 打开 `limits.cpu_ms` |
+| Error 1102 `Worker exceeded resource limits` | 免费版 CPU 上限 **10 ms**，而官方文档说 SSR 典型消耗 **10-20 ms** | 只有升级 Workers Paid 才能提高上限（默认 30 s）；免费版设 `limits.cpu_ms` 无效 |
 | KataGo 一直显示不可用 | Workers 没有子进程和文件系统，`spawn` / `existsSync` 在构建时被替换成 stub | 正常降级；`/api/katago-status` 会返回 `unsupported-runtime` 说明原因 |
 | AI 点评全是模板 | `.env` 不会被上传，`NUXT_LLM_API_KEY` 缺失时静默 fallback | 用 `wrangler secret put` 补齐 |
 
