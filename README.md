@@ -331,7 +331,8 @@ npm test           # 运行测试
 
 1. 从 `main` 切分支：`git checkout -b feat/xxx`
 2. 提交并推送：`git push -u origin feat/xxx`
-3. 开 PR：`gh pr create --fill`（会自动套用 PR 模板）
+3. 开 PR：`gh pr create`（交互式，会自动带出 PR 模板；
+   不要加 `--fill`，那会用 commit 信息当正文并把模板顶掉）
 4. CI 会自动跑测试和构建；CodeRabbit 会在 PR 里做一轮自动审查
 5. 本地改完继续 `git push`，CI 和 CodeRabbit 都会增量再审一次
 6. 全绿后 squash 合并
